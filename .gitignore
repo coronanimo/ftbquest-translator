@@ -1,0 +1,10 @@
+dist/
+__pycache__/
+.vscode/
+build/
+main.spec
+*.pyc
+data/translate_fine.json
+data/translate_work.json
+data/reference_218.json
+

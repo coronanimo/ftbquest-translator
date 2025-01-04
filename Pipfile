@@ -1,0 +1,15 @@
+[[source]]
+url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple"
+verify_ssl = true
+name = "pip_conf_index_global"
+
+[packages]
+requests = "*"
+ftb-snbt-lib = "*"
+openai = "*"
+configparser = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.13"
