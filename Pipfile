@@ -8,6 +8,7 @@ requests = "*"
 ftb-snbt-lib = "*"
 openai = "*"
 configparser = "*"
+aiohttp = "*"
 
 [dev-packages]
 

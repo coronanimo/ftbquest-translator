@@ -1,0 +1,23 @@
+[DEFAULT]
+dev_mode = 0
+database_path = ./translations.db
+modpack_path = <none>
+
+
+[QUEST]
+reference_path = data/quest_reference.json
+translate_fine_path = staging/quest_translate_fine.json
+translate_work_path = staging/quest_translate_work.json
+ftb_lang_source_path = config/ftbquests/quests/lang/en_us.snbt
+ftb_lang_target_path = config/ftbquests/quests/lang/zh_cn.snbt
+
+[MOD]
+reference_path = data/mod_reference.json
+resourcepack_path = data/mcmod_zhcn.zip
+
+[LLM]
+api_base = https://api.deepseek.com/
+api_key = <none>
+model = deepseek-chat
+max_tokens = 8192
+parallel_requests = 10

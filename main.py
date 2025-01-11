@@ -1,5 +1,7 @@
 import json
 import os
+import sys
+import time
 import ftb_snbt_lib as slib
 import ui
 from collections import deque
@@ -155,17 +157,18 @@ def translateWithDeepseek():
 
     bytesUpbound = maxTokens * 3 - 256
     locator = []
+
     for key, value in translateMap.items():
         if len(value['target']) > 0:
             continue
         if len(toTranslateString.encode('utf-8')) + \
                 len(value['origin'].encode('utf-8')) > bytesUpbound:
-            toTranslateQueue.append(toTranslateString.rstrip("\n"))
+            toTranslateQueue.append(toTranslateString.rstrip("#EOL#"))
             toTranslateString = ""
-        toTranslateString = toTranslateString + value['origin'] + "\n"
+        toTranslateString = toTranslateString + value['origin'] + "#EOL#"        
         locator.append(key)
-
-    toTranslateString = toTranslateString.rstrip("\n")
+    
+    toTranslateString = toTranslateString.rstrip("#EOL#")
     if len(toTranslateString) > 0:
         toTranslateQueue.append(toTranslateString)
 
@@ -181,20 +184,24 @@ def translateWithDeepseek():
         base_url=conf.getConfig('LLM', 'api_base'),
         api_key=conf.getConfig('LLM', 'api_key')
     )
+    
+    window.write("正在启动AI翻译 ... 共有" + str(len(locator)) + "条文本需要翻译")
+    # sleep 1 秒
+    time.sleep(1)
 
     try:
         remainLength = toTranslateLength
         for toTranslateString in toTranslateQueue:
             submitLength = len(toTranslateString.encode('utf-8'))
             remainLength -= submitLength
-            print(f"正在提交{submitLength}长度的文本，还剩下{remainLength}请等待...")
+            window.write(f"正在提交{submitLength}长度的文本，还剩下{remainLength}请等待...")            
             completion = client.chat.completions.create(
                 model=conf.getConfig('LLM', 'model'),
                 max_tokens=maxTokens,
                 messages=[
                     {
                         "role": "system",
-                        "content": '你是一个Minecraft我的世界游戏任务文本翻译专家，将用户输入的中文翻译成英文，或将用户输入的英文翻译成中文。对于非中文内容，它将提供中文翻译结果。用户可以向助手发送需要翻译的内容，助手会回答相应的翻译结果，并确保符合中文语言习惯以及我的世界游戏的风格。输入内容每行是一个任务文本，如果内容在花括号{}内，不要翻译，原样输出，内容中有类似与&开头的以及\\开头的转义字符，也要保持对应字符的格式不变'
+                        "content": '你是一个Minecraft我的世界游戏任务文本翻译专家，将用户输入的英文翻译成中文。用户可以向助手发送需要翻译的内容，助手会回答相应的翻译结果，并确保符合中文语言习惯以及我的世界游戏的风格。如果内容在花括号{}内，不要翻译，原样输出。如果内容中有类似与&开头的以及\\开头的转义字符，保持对应词不变。'
                     },
                     {
                         "role": "user",
@@ -202,15 +209,15 @@ def translateWithDeepseek():
                     }
                 ]
             )
-            print(completion.choices[0].message.content.strip("\n"))
-            translatedList.extend(
-                completion.choices[0].message.content.split("\n"))
+            # window.write("返回值：" + completion.choices[0].message.content)
+            sectionList = completion.choices[0].message.content.split("#EOL#")
+            translatedList.extend(sectionList)
     except Exception as e:
         window.show_info("错误", f"翻译出现错误，请检查API配置和错误信息\n{e}")
         return
 
     if len(translatedList) != len(locator):
-        window.show_info("错误", "翻译失败，翻译结果和原文长度不一致")
+        window.show_info("错误", "翻译失败，翻译结果和原文长度不一致，翻译结果有" + str(len(translatedList)) + "条，原文有" + str(len(locator)) + "条")
         return
 
     for i in range(len(locator)):
@@ -218,6 +225,7 @@ def translateWithDeepseek():
 
     with open(translateWorkPath, "w", encoding="utf-8") as f:
         json.dump(translateMap, f, ensure_ascii=False, indent=4)
+    window.write("AI翻译成功！")
     window.show_info("提示", f"翻译成功，翻译结果已经写入{translateWorkPath}文件，你可以手动检查修正")
 
 
@@ -265,6 +273,16 @@ def writeBackToModpack():
 
 
 if __name__ == "__main__":
+
+    try:
+        from ctypes import windll
+        windll.shcore.SetProcessDpiAwareness(1)
+        os.mkdir(os.path.join(sys._MEIPASS, 'ftb_snbt_lib'))
+    except:
+        pass
+
+    
+    
     from ui import MainWindow
     window = MainWindow()
 

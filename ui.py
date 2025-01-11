@@ -3,15 +3,15 @@ from tkinter import filedialog, scrolledtext
 import sys
 from io import StringIO
 import os
+import config
 
 class MainWindow:
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("FTB任务书翻译工具 by 骑狗上学@bilibili")
-        self.root.geometry("800x600")
+        self.root.title("FTB任务书翻译工具 by 骑狗上学@bilibili")        
         
         # 标题：FTBQuests 任务书翻译工具 by CoronaNIMO
-        self.title_label = tk.Label(self.root, text="FTBQuests 任务书翻译工具 by 骑狗上学@bilibili", font=("Arial", 16))
+        self.title_label = tk.Label(self.root, text="FTBQuests 任务书翻译工具 by 骑狗上学@bilibili", font=("微软雅黑",16))
         self.title_label.pack(pady = (10, 0))
         # 翻译整合包任务书区域
         self.translate_frame = tk.LabelFrame(self.root, text="汉化整合包任务书", bd=2, relief=tk.GROOVE)
@@ -100,16 +100,12 @@ class MainWindow:
         
         self.console_text = scrolledtext.ScrolledText(self.console_frame, state='disabled')
         self.console_text.pack(fill=tk.BOTH, expand=True)
-        
-        # 重定向控制台输出
-        self.old_stdout = sys.stdout
-        self.old_stderr = sys.stderr
-        sys.stdout = self
+
         sys.stderr = self
+        sys.stdout = self
+                
 
     def open_work_path(self):
-        """打开工作翻译路径文件"""
-        import config
         filepath = config.getDefaultConfig('translate_work_path')
         # 把filepath 改成以当前目录为基础的windows目录形态
         filepath = os.path.abspath(filepath)
@@ -125,14 +121,6 @@ class MainWindow:
 
         
     def create_config_ui(self):
-        """创建配置项UI"""
-        from configparser import ConfigParser
-        import os
-        
-        # 读取配置文件
-        self.config = ConfigParser()
-        config_path = os.path.join(os.path.dirname(__file__), 'config.ini')
-        self.config.read(config_path)
         
         # 创建配置项容器
         config_container = tk.Frame(self.config_frame)
@@ -202,32 +190,24 @@ class MainWindow:
         for section in self.config_entries:
             for key in self.config_entries[section]:
                 entry = self.config_entries[section][key]
-                value = self.config.get(section, key)
+                value = config.getConfig(section, key)
                 entry.delete(0, tk.END)
                 entry.insert(0, value)
                 
     def save_config(self):
-        """保存配置到文件"""
-        from configparser import ConfigParser
-        import os
         
         # 更新配置
         for section in self.config_entries:
             for key in self.config_entries[section]:
                 entry = self.config_entries[section][key]
-                self.config[section][key] = entry.get()
+                config.setConfig(section, key, entry.get())                
         
         # 写入文件
-        config_path = os.path.join(os.path.dirname(__file__), 'config.ini')
-        with open(config_path, 'w') as f:
-            self.config.write(f)
+        config.flushConfig()
         
         # 重新加载配置
         self.load_config()
         self.show_info("提示", "配置保存成功")
-        
-        # 通知配置更新
-        import config
         config.reload_config()
         
         
@@ -251,10 +231,10 @@ class MainWindow:
     
     def write(self, text):
         self.console_text.configure(state='normal')
-        self.console_text.insert(tk.END, text)
+        self.console_text.insert(tk.END, text + "\n")
         self.console_text.configure(state='disabled')
         self.console_text.see(tk.END)
-        self.old_stdout.write(text)
+        self.console_text.update()
     
     def flush(self):
         pass
@@ -267,6 +247,5 @@ class MainWindow:
         self.root.mainloop()
         
     def __del__(self):
-        # 恢复标准输出
-        sys.stdout = self.old_stdout
-        sys.stderr = self.old_stderr
+        pass
+
